@@ -1,11 +1,12 @@
 // @author         zeta709
-// @version        version 0.3_2010-01-26
-// Copyright (c) 2010, zeta709.
+// @version        version 0.4_2013-08-11
+// Copyright (c) 2010-2013, zeta709.
 // ==UserScript==
 // @name           SNULIFE
-// @namespace      http://noexists.tistory.com/
-// @description    Make an article printable.
+// @namespace      zeta709
+// @description    Make an article printable. Remove ads.
 //                 스누라이프 게시물을 인쇄에 적합하도록 편집함.
+//                 광고를 제거함.
 // @include        http://www.snulife.com/*
 // ==/UserScript==
 
@@ -25,6 +26,49 @@ function removeElementsByClassName(className)
 	for (var i = rm.length - 1; i >= 0; --i) {
 		rm[i].parentNode.removeChild(rm[i]);
 	}
+}
+
+function removePowerLink()
+{
+	var div = document.getElementsByTagName('div');
+	// find PowerLink
+	var x = -1;
+	for (var i = 0; i < div.length; ++i) {
+		if (div[i].className === 'googleAd1') {
+			x = i;
+			break;
+		}
+	}
+	if (x < 0)
+		return;
+	var suspect = div[x].previousElementSibling;
+	if (!suspect)
+		return;
+	var tmp = suspect.getElementsByTagName('div');
+	if (tmp.length <= 0)
+		return;
+	tmp = tmp[0].getElementsByTagName('table');
+	if (tmp.length <= 0)
+		return;
+	tmp = tmp[0].getElementsByTagName('tbody');
+	if (tmp.length <= 0)
+		return;
+	tmp = tmp[0].getElementsByTagName('tr');
+	if (tmp.length <= 0)
+		return;
+	tmp = tmp[0].getElementsByTagName('td');
+	if (tmp.length <= 0)
+		return;
+	if (tmp[0].innerHTML.indexOf('powerlink') != -1)
+		suspect.parentNode.removeChild(suspect);
+}
+
+function removeAds()
+{
+	removePowerLink();
+	removeElementById('google_image_div');
+	removeElementsByClassName('googleAd');
+	removeElementsByClassName('googleAd1');
 }
 
 function addGlobalStyle(css)
@@ -60,6 +104,7 @@ function makePrintablePage(removeReply)
 		contentBody.parentNode.insertBefore(header_2, contentBody);
 	}
 
+	removeAds();
 	removeElementById('columnLeft');
 	removeElementById('columnRight');
 	removeElementById('footer');
@@ -68,7 +113,6 @@ function makePrintablePage(removeReply)
 	removeElementById('membermenuarea'); // what's this?
 	removeElementsByClassName('boardHeaderLine');
 	removeElementsByClassName('boardComment');
-	removeElementsByClassName('googleAd');
 	removeElementsByClassName('boardWrite');
 	removeElementsByClassName('boardList');
 	removeElementsByClassName('listLink');
@@ -113,6 +157,7 @@ function makePrintablePage(removeReply)
 	}
 
 	addGlobalStyle('#bodyWrap, #header, #contentBody {width: 620px;}');
+	addGlobalStyle('#contentBody {background: transparent;}');
 }
 
 function insertFunction()
@@ -200,5 +245,23 @@ function insertFunction()
 	}
 }
 
-insertFunction();
+function hideMemberName()
+{
+	var headerMenuList = document.getElementById('headerMenuList');
+	if (!headerMenuList)
+		return;
+	var x = headerMenuList.getElementsByClassName('member');
+	if (x.length < 0)
+		return;
+	x = x[0].getElementsByTagName('a');
+	if (x.length < 0)
+		return;
+	x = x[0].getElementsByTagName('strong');
+	if (x.length < 0)
+		return;
+	x[0].innerHTML = '********';
+}
 
+hideMemberName();
+removeAds()
+insertFunction();
