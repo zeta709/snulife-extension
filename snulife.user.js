@@ -1,12 +1,10 @@
 // @author         zeta709
-// @version        version 0.4_2013-08-11
+// @version        version 0.6_2013-09-03
 // Copyright (c) 2010-2013, zeta709.
 // ==UserScript==
 // @name           SNULIFE
 // @namespace      zeta709
-// @description    Make an article printable. Remove ads.
-//                 스누라이프 게시물을 인쇄에 적합하도록 편집함.
-//                 광고를 제거함.
+// @description    스누라이프를 위한 크롬 확장 기능입니다.
 // @include        http://www.snulife.com/*
 // ==/UserScript==
 
@@ -30,24 +28,19 @@ function removeElementsByClassName(className)
 
 function removePowerLink()
 {
-	var div = document.getElementsByTagName('div');
-	// find PowerLink
-	var x = -1;
-	for (var i = 0; i < div.length; ++i) {
-		if (div[i].className === 'googleAd1') {
-			x = i;
-			break;
-		}
-	}
-	if (x < 0)
+	var div = document.getElementById('comment');
+	if (!div)
 		return;
-	var suspect = div[x].previousElementSibling;
+	div = div.getElementsByClassName('cmt_editor');
+	if (div.length != 1)
+		return;
+	var suspect = div[0].nextElementSibling;
 	if (!suspect)
 		return;
-	var tmp = suspect.getElementsByTagName('div');
-	if (tmp.length <= 0)
+	// suspect가 진짜 광고인지 확인
+	if (suspect.childElementCount != 1)
 		return;
-	tmp = tmp[0].getElementsByTagName('table');
+	var tmp = suspect.getElementsByTagName('table');
 	if (tmp.length <= 0)
 		return;
 	tmp = tmp[0].getElementsByTagName('tbody');
@@ -63,12 +56,36 @@ function removePowerLink()
 		suspect.parentNode.removeChild(suspect);
 }
 
+function removeMegaEnglish()
+{
+	var div = document.getElementById('bd');
+	if (!div)
+		return;
+	div = div.getElementsByClassName('rd_ft');
+	if (div.length != 1)
+		return;
+	var suspect = div[0].nextElementSibling;
+	if (!suspect)
+		return;
+	// suspect가 진짜 광고인지 확인
+	if (suspect.childElementCount != 2)
+		return;
+	var tmp = suspect.getElementsByTagName('a');
+	if (tmp.length < 0)
+		return;
+	if (tmp[0].href.indexOf('megaenglish') != -1)
+		suspect.parentNode.removeChild(suspect);
+}
+
 function removeAds()
 {
 	removePowerLink();
-	removeElementById('google_image_div');
-	removeElementsByClassName('googleAd');
-	removeElementsByClassName('googleAd1');
+	removeMegaEnglish();
+//	리뉴얼 이후 없어진 광고들 주석 처리
+//	removeElementById('google_image_div');
+//	removeElementsByClassName('googleAd');
+//	removeElementsByClassName('googleAd1');
+	removeElementsByClassName('GoogleBox');
 }
 
 function addGlobalStyle(css)
@@ -85,178 +102,90 @@ function addGlobalStyle(css)
 
 function makePrintablePage(removeReply)
 {
-	var contentBody = document.getElementById('contentBody');
-	var topLogo = document.getElementById('topLogo');
-	var textTitle = document.getElementById('textTitle');
-	var clear_2 = document.createElement('div');
-	clear_2.className = 'clear';
-
-	removeElementById('header');
-
-	var header_2 = document.createElement('div');
-	header_2.id = 'header';
-	if (topLogo)
-		header_2.appendChild(topLogo);
-	if (textTitle)
-		header_2.appendChild(textTitle);
-	header_2.appendChild(clear_2);
-	if (contentBody) {
-		contentBody.parentNode.insertBefore(header_2, contentBody);
-	}
-
 	removeAds();
-	removeElementById('columnLeft');
-	removeElementById('columnRight');
+
+	var content = document.getElementById('content');
+	var sub_content = document.getElementById('sub_content');
+	// 로고 위치 변경
+	var logo = document.getElementById('logo');
+	if (sub_content && content && logo)
+		sub_content.insertBefore(logo, content);
+	addGlobalStyle('#logo {position: relative !important; margin: 0px !important;}');
+	// URL 추가
+	var myurl = document.createElement('div');
+	myurl.innerHTML = document.URL;
+	myurl.style.clear = "both";
+	if (sub_content && content)
+		sub_content.insertBefore(myurl, content);
+	// 상단 제거
+	removeElementById('header');
+	// 하단 제거
 	removeElementById('footer');
-	removeElementById('waitingforserverresponse'); // what's this?
-	removeElementById('fororiginalimagearea'); // what's this?
-	removeElementById('membermenuarea'); // what's this?
-	removeElementsByClassName('boardHeaderLine');
-	removeElementsByClassName('boardComment');
-	removeElementsByClassName('boardWrite');
-	removeElementsByClassName('boardList');
-	removeElementsByClassName('listLink');
-
-	var clear = document.getElementsByClassName('clear');
-	if (clear) {
-		var i = clear.length - 1;
-		var pageNavigation = clear[i].getElementsByClassName('pageNavigation');
-		if (pageNavigation.length > 0)
-			clear[i].parentNode.removeChild(clear[i]);
-	}
-
-	var readFooter = document.getElementsByClassName('readFooter');
-	if (readFooter.length > 0) {
-		var buttonList = readFooter[0].getElementsByClassName('buttonList');
-		if (buttonList.length > 0)
-			buttonList[0].parentNode.removeChild(buttonList[0]);
-		var voteButton = readFooter[0].getElementsByClassName('voteButton');
-		if (voteButton.length > 0)
-			voteButton[0].parentNode.removeChild(voteButton[0]);
-	}
+	// 사이드 영역 제거
+	removeElementById('sub_lnb');
+	// 3단 영역 제거
+	removeElementById('sub_col3');
+	// 게시물 목록 제거
+	removeElementById('bd_lst_wrp');
+	// 댓글 작성 폼 제거
+	removeElementsByClassName('cmt_editor');
+	// 
+	removeElementById('prev_next');
+	// 네비게이션 제거
+	removeElementsByClassName('rd_ft_nav');
+	// side 네비게이션 제거
+	removeElementsByClassName('rd_nav_side');
+	// 스타일 수정 (글 내용 중앙 정렬을 위해)
+	addGlobalStyle('#bodyWrap, #contentBody, #sub_content {width: 635px !important;}');
 
 	if (removeReply) {
-		removeElementById('reply');
-	} else {
-		var reply = document.getElementById('reply');
-		if (reply.childElementCount == 0) {
-			reply.innerHTML = "(댓글 없음)";
-		} else {
-			removeElementsByClassName('replyOption');
-
-			var replyContentHideNotice = document.getElementsByClassName('replyContentHideNotice');
-			if (replyContentHideNotice) {
-				for (var i=0; i < replyContentHideNotice.length; ++i) {
-					var text = replyContentHideNotice[i].getElementsByClassName('replyContentHideText');
-					if (text.length > 0)
-						text[0].innerHTML = "내용감추기";
-					replyContentHideNotice[i].nextElementSibling.style.display = 'block';
-				}
-			}
-		}
+		removeElementById('comment');
 	}
-
-	addGlobalStyle('#bodyWrap, #header, #contentBody {width: 620px;}');
-	addGlobalStyle('#contentBody {background: transparent;}');
 }
 
 function insertFunction()
 {
-	var columnLeft = document.getElementById('columnLeft');
-	if (columnLeft) {
-		addGlobalStyle("#myTool {"
-			       + "width: 94px; border: 2px solid #ccc; "
-			       + "background: #fff; padding: 10px 6px 10px 6px;}"
-			       + "#myTool ul li {"
-			       + "color: #555555; "
-			       + "padding: 3px 2px 2px 6px; "
-			       + "background: url(http://www.snulife.com/"
-			       + "layouts/apollo_v2/images/common/bulletLnbGray.gif) "
-			       + "no-repeat left 10px;}");
-
-		var ul = document.createElement('ul');
-
-		var li = document.createElement('li');
-		li.addEventListener("click",
-				    function(event){makePrintablePage(false)}, false);
-		li.innerHTML = "인쇄";
-		ul.appendChild(li);
-
-		var li_2 = document.createElement('li');
-		li_2.addEventListener("click",
-				      function(event){makePrintablePage(true)}, false);
-		li_2.innerHTML = "인쇄(본문만)";
-		ul.appendChild(li_2);
-
-		var space = document.createElement('div');
-		space.className = 'columnLeftSpace';
-		columnLeft.appendChild(space);
-
-		var print = document.createElement('div');
-		print.id = 'myTool';
-		print.appendChild(ul)
-
-		columnLeft.appendChild(print);
-	}
-	var headerMenuList = document.getElementById('headerMenuList');
-	if (headerMenuList) {
-		addGlobalStyle("#headerMenuList li {"
-			       + "color: #777; font-size: 11px;}");
-
-		var li = document.createElement('li');
-		li.addEventListener("click",
-				    function(event){makePrintablePage(false)}, false);
-		li.innerHTML = "인쇄";
-
-		var li_2 = document.createElement('li');
-		li_2.addEventListener("click",
-				      function(event){makePrintablePage(true)}, false);
-		li_2.innerHTML = "인쇄(본문만)";
-
-		headerMenuList.insertBefore(li, headerMenuList.firstChild);
-		headerMenuList.insertBefore(li_2, headerMenuList.firstChild);
-	}
-	var fo_comment_write = document.getElementById('fo_comment_write');
-	if (fo_comment_write) {
-		var commentButton = document.getElementsByClassName('commentButton');
-		if (commentButton.length > 0) {
-			var button_1 = document.createElement('span');
-			button_1.className = "button";
-			var input_1 = document.createElement('input');
-			input_1.addEventListener("click",
-						 function(event){makePrintablePage(false)}, false);
-			input_1.type = "button";
-			input_1.value = "인쇄";
-			button_1.appendChild(input_1);
-			commentButton[0].insertBefore(button_1,
-						     commentButton[0].firstChild);
-
-			var button_2 = document.createElement('span');
-			button_2.className = "button";
-			var input_2 = document.createElement('input');
-			input_2.addEventListener("click",
-						 function(event){makePrintablePage(true)}, false);
-			input_2.type = "button";
-			input_2.value = "인쇄(본문만)";
-			button_2.appendChild(input_2);
-			commentButton[0].insertBefore(button_2,
-						      commentButton[0].firstChild);
-		}
-	}
+	var my_a = document.createElement('a');
+	my_a.addEventListener("click",
+			function(event){makePrintablePage(false)}, false);
+	my_a.innerHTML = "인쇄";
+	// 넣을 위치 찾기
+	var headerMenuList = document.getElementById('outlogin');
+	if (!headerMenuList)
+		return;
+	var x = headerMenuList.getElementsByTagName('div');
+	if (x.length < 0)
+		return;
+	x = x[0].getElementsByTagName('div');
+	if (x.length < 0)
+		return;
+	x = x[0].getElementsByTagName('form');
+	if (x.length < 0)
+		return;
+	x = x[0].getElementsByTagName('div');
+	if (x.length != 3)
+		return;
+	x[1].appendChild(my_a);
 }
 
 function hideMemberName()
 {
-	var headerMenuList = document.getElementById('headerMenuList');
+	var headerMenuList = document.getElementById('outlogin');
 	if (!headerMenuList)
 		return;
-	var x = headerMenuList.getElementsByClassName('member');
+	var x = headerMenuList.getElementsByTagName('div');
+	if (x.length < 0)
+		return;
+	x = x[0].getElementsByTagName('div');
+	if (x.length < 0)
+		return;
+	x = x[0].getElementsByTagName('form');
+	if (x.length < 0)
+		return;
+	x = x[0].getElementsByTagName('div');
 	if (x.length < 0)
 		return;
 	x = x[0].getElementsByTagName('a');
-	if (x.length < 0)
-		return;
-	x = x[0].getElementsByTagName('strong');
 	if (x.length < 0)
 		return;
 	x[0].innerHTML = '********';

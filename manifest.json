@@ -2,8 +2,8 @@
 	"manifest_version": 2,
 
 	"name": "SNULife Printable",
-	"description": "스누라이프 페이지를 인쇄용으로 만들어줍니다.",
-	"version": "0.4",
+	"description": "스누라이프를 위한 크롬 확장 기능입니다.",
+	"version": "0.6",
 	"content_scripts": [
 		{
 			"matches": ["http://www.snulife.com/*"],
