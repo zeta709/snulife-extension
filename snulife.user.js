@@ -1,11 +1,12 @@
 // @author         zeta709
-// @version        version 0.6_2013-09-03
+// @version        version 0.6.1_2013-09-07
 // Copyright (c) 2010-2013, zeta709.
 // ==UserScript==
 // @name           SNULIFE
 // @namespace      zeta709
 // @description    스누라이프를 위한 크롬 확장 기능입니다.
-// @include        http://www.snulife.com/*
+// @include        http://snulife.com/*
+// @include        http://*.snulife.com/*
 // ==/UserScript==
 
 function removeElementById(id)
